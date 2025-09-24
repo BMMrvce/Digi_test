@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../theme/app_theme.dart';
 import '../theme/app_components.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
@@ -17,6 +16,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  // State variable for hover effect
+  bool _isSignUpHovered = false;
 
   @override
   void dispose() {
@@ -37,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (error != null && mounted) {
       AppComponents.showErrorSnackbar(context, error);
     } else if (mounted) {
-      // Navigate to home screen after successful sign in
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
   }
@@ -45,55 +46,74 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 60),
-                Icon(
-                  Icons.lock_outline,
-                  size: 80,
-                  color: AppColors.primaryAccent,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                // Increased spacing at the top to move the logo down
+                const SizedBox(height: 70.0),
+                // QCVation Logo and Slogan
+                Image.asset(
+                  'assets/qclogo.png',
+                  height: 180,
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Welcome Back',
-                  style: AppTextStyles.h1,
-                  textAlign: TextAlign.center,
+                const SizedBox(height: 30.0),
+
+                // Login Title
+                const Text(
+                  'LOGIN',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign in to your account',
-                  style: AppTextStyles.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-                AppComponents.inputField(
+                const SizedBox(height: 24.0),
+
+                // Email Text Field
+                TextFormField(
                   controller: _emailController,
-                  labelText: 'Email',
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    fillColor: Colors.grey[200],
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                AppComponents.inputField(
+                const SizedBox(height: 16.0),
+
+                // Password Text Field
+                TextFormField(
                   controller: _passwordController,
-                  labelText: 'Password',
-                  prefixIcon: Icons.lock_outlined,
                   obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    fillColor: Colors.grey[200],
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -104,44 +124,106 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8.0),
+
+                // Forgot Password
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+
+                // Sign In Button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
-                    return AppComponents.primaryButton(
-                      text: 'Sign In',
-                      onPressed: authProvider.isLoading ? null : _signIn,
-                      isLoading: authProvider.isLoading,
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                        authProvider.isLoading ? null : () => _signIn(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF194C8E),
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 16.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: authProvider.isLoading
+                            ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                            : const Text(
+                          'Sign in',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
-                const SizedBox(height: 16),
-                AppComponents.textButton(
-                  text: 'Forgot Password?',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16.0),
+
+                // Sign Up Text with hover effect
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       "Don't have an account? ",
-                      style: AppTextStyles.bodyMedium,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                      ),
                     ),
-                    AppComponents.textButton(
-                      text: 'Sign Up',
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                        );
-                      },
+                    MouseRegion(
+                      onEnter: (_) => setState(() => _isSignUpHovered = true),
+                      onExit: (_) => setState(() => _isSignUpHovered = false),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SignUpScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Sign Up here",
+                          style: TextStyle(
+                            color: _isSignUpHovered ? Colors.blue.shade800 : const Color(0xFF194C8E),
+                            decoration: TextDecoration.underline,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 60.0),
+
+                // Paramount Logo at the bottom
+                Image.asset(
+                  'assets/paramount_logo.png',
+                  height: 60,
                 ),
               ],
             ),

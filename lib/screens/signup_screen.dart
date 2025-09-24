@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../theme/app_theme.dart';
-import '../theme/app_components.dart';
-import 'login_screen.dart';
+import 'login_screen.dart'; // <-- Import your LoginScreen
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -13,149 +9,113 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoginHovered = false; // <-- State variable for hover effect
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
+  // Submit function
+  void _signUp() {
+    if (_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account Created Successfully")),
+      );
+    }
   }
 
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final error = await authProvider.signUp(
-      _emailController.text.trim(),
-      _passwordController.text,
+  // Reusable TextField widget
+  Widget _textField(String label, {bool obscure = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        obscureText: obscure,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        validator: (value) =>
+        value == null || value.isEmpty ? "Enter $label" : null,
+      ),
     );
-
-    if (error != null && mounted) {
-      AppComponents.showErrorSnackbar(context, error);
-    } else if (mounted) {
-      AppComponents.showSuccessSnackbar(
-        context, 
-        'Account created successfully!'
-      );
-      // Navigate to home screen after successful sign up
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 60),
-                Icon(
-                  Icons.person_add_outlined,
-                  size: 80,
-                  color: AppColors.primaryAccent,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              const SizedBox(height: 50),
+              Image.asset(
+                "assets/humanrobo.png",
+                height: 100,
+              ),
+              Image.asset(
+                'assets/qcvation.png',
+                height: 80,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "CREATE AN ACCOUNT",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+
+              // All input fields
+              _textField("First Name"),
+              _textField("Middle Name"),
+              _textField("Last Name"),
+              _textField("Mobile"),
+              _textField("Email"),
+              _textField("Password", obscure: true),
+              _textField("Confirm Password", obscure: true),
+              _textField("Company Name"),
+              _textField("Designation"),
+              _textField("Address"),
+              _textField("City"),
+              _textField("State"),
+              _textField("Country"),
+              _textField("Tax ID / GST No."),
+
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _signUp,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Create Account',
-                  style: AppTextStyles.h1,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign up to get started',
-                  style: AppTextStyles.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-                AppComponents.inputField(
-                  controller: _emailController,
-                  labelText: 'Email',
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                AppComponents.inputField(
-                  controller: _passwordController,
-                  labelText: 'Password',
-                  prefixIcon: Icons.lock_outlined,
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                AppComponents.inputField(
-                  controller: _confirmPasswordController,
-                  labelText: 'Confirm Password',
-                  prefixIcon: Icons.lock_outlined,
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return AppComponents.primaryButton(
-                      text: 'Sign Up',
-                      onPressed: authProvider.isLoading ? null : _signUp,
-                      isLoading: authProvider.isLoading,
+                child: const Text("Create Account"),
+              ),
+
+              const SizedBox(height: 16),
+              // Corrected: Text with blue color and hover effect
+              MouseRegion(
+                onEnter: (_) => setState(() => _isLoginHovered = true),
+                onExit: (_) => setState(() => _isLoginHovered = false),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                     );
                   },
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Already have an account? ",
-                      style: AppTextStyles.bodyMedium,
+                  child: Text(
+                    "Already a user? Log in",
+                    style: TextStyle(
+                      color: _isLoginHovered ? Colors.blue.shade800 : Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
                     ),
-                    AppComponents.textButton(
-                      text: 'Sign In',
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      },
-                    ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

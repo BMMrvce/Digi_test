@@ -60,10 +60,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                Icon(
-                  Icons.lock_reset_outlined,
-                  size: 80,
-                  color: AppColors.primaryAccent,
+                Image.asset(
+                  'assets/qclogo.png',
+                  // Replace with your asset path
+                  height: 80,
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -73,7 +73,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Enter your email address and we\'ll send you a link to reset your password',
+                  'We will send you an email with a link to reset \ your password, please enter the email \ associated with your account below.',
                   style: AppTextStyles.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
