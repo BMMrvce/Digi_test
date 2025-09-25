@@ -23,11 +23,28 @@ class ProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              Text(
-                'Profile',
-                style: AppTextStyles.h1,
+              // MODIFIED: Header Row with Title and Sign Out Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Profile',
+                    style: AppTextStyles.h1,
+                  ),
+                  // Sign Out Button (Moved to top right)
+                  IconButton(
+                    icon: Icon(
+                      Icons.logout,
+                      size: AppSizes.iconLarge,
+                      color: AppColors.errorColor,
+                    ),
+                    onPressed: () => _showSignOutDialog(context, authProvider),
+                    // Removed extra padding/background to keep it clean like a standard action icon
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
+              // Profile Info Card
               Center(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 400),
@@ -71,6 +88,7 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              // Options List
               Expanded(
                 child: ListView(
                   children: [
@@ -78,60 +96,41 @@ class ProfilePage extends StatelessWidget {
                       context,
                       'Welcome to Imagepick',
                       Icons.waving_hand,
-                      () => _navigateToPage(context, const WelcomeScreen()),
+                      // Assuming WelcomeScreen is accessible from info_pages.dart or defined elsewhere
+                          () => _navigateToPage(context, const WelcomeScreen()),
                     ),
                     _buildProfileOption(
                       context,
                       'About Paramount',
                       Icons.info,
-                      () => _navigateToPage(context, const AboutParamountScreen()),
+                          () => _navigateToPage(context, const AboutParamountScreen()),
                     ),
                     _buildProfileOption(
                       context,
                       'Visit Paramount Site',
                       Icons.public,
-                      () => _navigateToPage(context, const VisitSiteScreen()),
+                          () => _navigateToPage(context, const VisitSiteScreen()),
                     ),
                     _buildProfileOption(
                       context,
                       'Terms & Conditions',
                       Icons.description,
-                      () => _navigateToPage(context, const TermsConditionsScreen()),
+                          () => _navigateToPage(context, const TermsConditionsScreen()),
                     ),
                     _buildProfileOption(
                       context,
                       'Privacy Policy',
                       Icons.privacy_tip,
-                      () => _navigateToPage(context, const PrivacyPolicyScreen()),
+                          () => _navigateToPage(context, const PrivacyPolicyScreen()),
                     ),
                     _buildProfileOption(
                       context,
                       'Upgrade Firmware',
                       Icons.upgrade,
-                      () => _navigateToPage(context, const UpgradeFirmwareScreen()),
+                          () => _navigateToPage(context, const UpgradeFirmwareScreen()),
                     ),
                     const SizedBox(height: 32),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.errorColor,
-                        borderRadius: AppBorderRadius.button,
-                      ),
-                      child: TextButton.icon(
-                        onPressed: () => _showSignOutDialog(context, authProvider),
-                        icon: const Icon(Icons.logout, color: Colors.white),
-                        label: Text(
-                          'Sign Out',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: AppSizes.lg),
-                        ),
-                      ),
-                    ),
+                    // REMOVED: The old Sign Out button was here. Keeping this space for padding if necessary.
                   ],
                 ),
               ),
@@ -143,11 +142,11 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildProfileOption(
-    BuildContext context,
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
+      BuildContext context,
+      String title,
+      IconData icon,
+      VoidCallback onTap,
+      ) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.md),
       padding: const EdgeInsets.all(AppSizes.lg),
@@ -174,8 +173,8 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.arrow_forward_ios, 
-                size: AppSizes.iconSmall, 
+                Icons.arrow_forward_ios,
+                size: AppSizes.iconSmall,
                 color: AppColors.tertiaryText,
               ),
             ],
@@ -215,6 +214,7 @@ class ProfilePage extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              // Assuming authProvider.signOut() handles navigation away from the page
               authProvider.signOut();
             },
             child: const Text('Sign Out'),

@@ -1,18 +1,14 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+// Ensure these imports point to your actual files
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_theme.dart'; // Source for AppColors, AppTextStyles, AppSizes, AppComponents
 import '../theme/app_components.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'reports_page.dart'; // Source for ReportsPage
 
-class Homepage extends StatefulWidget {
-  Homepage({super.key});
-  @override
-  State<Homepage> createState() => _HomepageState();
-}
-
+// --- ImageCarousel Widget ---
 class ImageCarousel extends StatefulWidget {
   const ImageCarousel({super.key});
   @override
@@ -50,7 +46,9 @@ class _ImageCarouselState extends State<ImageCarousel> {
             margin: const EdgeInsets.symmetric(horizontal: 5.0),
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(10.0)),
-              child: Image.asset(item, fit: BoxFit.cover, width: MediaQuery.of(context).size.width),
+              child: Image.asset(item, fit: BoxFit.cover, width: MediaQuery.of(context).size.width,
+                errorBuilder: (context, error, stackTrace) => Container(height: 150, color: AppColors.primaryAccent, child: const Center(child: Text("Banner"))),
+              ),
             ),
           )).toList(),
         ),
@@ -80,14 +78,19 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
+// --- Homepage Widget ---
+class Homepage extends StatefulWidget {
+  const Homepage({super.key});
+  @override
+  State<Homepage> createState() => _HomepageState();
+}
 
 class _HomepageState extends State<Homepage> {
+  // Assuming AuthService is correctly instantiated/provided
   final AuthService _authService = AuthService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
-  int _current = 0;
-  final CarouselSliderController _carouselSliderController = CarouselSliderController();
 
   @override
   void dispose() {
@@ -95,8 +98,10 @@ class _HomepageState extends State<Homepage> {
     super.dispose();
   }
 
+  // --- Main Build Method ---
   @override
   Widget build(BuildContext context) {
+    // Assuming AuthProvider is available via Provider.of
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
@@ -114,20 +119,25 @@ class _HomepageState extends State<Homepage> {
                   child: Image.asset(
                     'assets/logo.png',
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.business),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              // --- Use the split carousel widget ---
-              ImageCarousel(),
+              const ImageCarousel(),
               const SizedBox(height: 20),
-              _buildSummarySection(),
+              _buildStatisticsCards(context, authProvider),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'My devices',
-                    style: AppTextStyles.h1,
+                  const Text(
+                    'Instruments (Devices)',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
                   Row(
                     children: [
@@ -157,7 +167,7 @@ class _HomepageState extends State<Homepage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               if (_isSearching) ...[
                 AppComponents.card(
                   child: TextField(
@@ -187,12 +197,15 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  // --- Helper Methods (Stats & Device List) ---
+
   Widget _buildIconButton({
     required IconData icon,
     required VoidCallback onPressed,
     Color? backgroundColor,
     Color? iconColor,
   }) {
+    // AppComponents.iconButton is assumed to be defined in '../theme/app_components.dart'
     return AppComponents.iconButton(
       icon: icon,
       onPressed: onPressed,
@@ -202,76 +215,89 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  Widget _buildSummarySection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: AppComponents.card(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
-              crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
-              children: [
-                Text(
-                  '6',
-                  style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
-                  textAlign: TextAlign.center, // Ensure text itself is centered
-                ),
-                Text(
-                  'Under Warranty',
-                  style: AppTextStyles.bodyMedium,
-                  textAlign: TextAlign.center, // Ensure text itself is centered
-                ),
-              ],
+  Widget _buildStatisticsCards(BuildContext context, AuthProvider authProvider) {
+    if (authProvider.organization == null) {
+      return Row(
+        children: [
+          Expanded(child: _buildStatCard('0', 'Total\nDevices')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildStatCard('0', 'AMC\nActive')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildStatCard('0', 'Service\nRequest')),
+        ],
+      );
+    }
+
+    // AuthService.getDevicesForOrganization is assumed to exist
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _authService.getDevicesForOrganization(authProvider.organization!['id']),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Row(
+            children: [
+              Expanded(child: _buildStatCard('...', 'Total\nDevices')),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard('...', 'AMC\nActive')),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard('...', 'Service\nRequest')),
+            ],
+          );
+        }
+
+        final devices = snapshot.data ?? [];
+        final totalDevices = devices.length;
+
+        final now = DateTime.now();
+        final amcActiveDevices = devices.where((device) {
+          if (device['amc_end_date'] == null) return false;
+          try {
+            final amcEndDate = DateTime.parse(device['amc_end_date']);
+            return amcEndDate.isAfter(now);
+          } catch (e) {
+            return false;
+          }
+        }).length;
+
+        const serviceRequests = 0;
+
+        return Row(
+          children: [
+            Expanded(child: _buildStatCard(totalDevices.toString(), 'Total\nDevices')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildStatCard(amcActiveDevices.toString(), 'AMC\nActive')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildStatCard(serviceRequests.toString(), 'Service\nRequest')),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(String number, String label) {
+    // AppComponents.card is assumed to be defined in '../theme/app_components.dart'
+    return AppComponents.card(
+      child: Column(
+        children: [
+          Text(
+            number,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: AppComponents.card(
-            child: SizedBox(
-              height: 65, // Adjust the height as needed to match the other cards
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
-                crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
-                children: [
-                  Text(
-                    '2',
-                    style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
-                    textAlign: TextAlign.center, // Ensure text itself is centered
-                  ),
-                  Text(
-                    'AMC Active',
-                    style: AppTextStyles.bodyMedium,
-                    textAlign: TextAlign.center, // Ensure text itself is centered
-                  ),
-                ],
-              ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: AppComponents.card(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
-              crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
-              children: [
-                Text(
-                  '0',
-                  style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
-                  textAlign: TextAlign.center, // Ensure text itself is centered
-                ),
-                Text(
-                  'Service Request',
-                  style: AppTextStyles.bodyMedium,
-                  textAlign: TextAlign.center, // Ensure text itself is centered
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -323,345 +349,195 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  // --- Device Card Implementation ---
   Widget _buildDeviceCard(BuildContext context, Map<String, dynamic> device) {
-    // Use a null-aware operator for safety
-    final deviceStatus = device['device_status'] ?? 'Not available';
-    final amcStatus = device['amc_status'] ?? 'Not active';
+    const String deviceName = "DigiPICK™ i11";
+    final String deviceIdShort = (device['id'] != null && device['id'].length >= 6)
+        ? device['id'].substring(device['id'].length - 6)
+        : (device['id'] ?? 'cb3b69');
 
-    // Function to get the color based on status text
-    Color _getStatusColor(String status) {
-      if (status.toLowerCase().contains('active') || status.toLowerCase().contains('available')) {
-        return Colors.green[600]!;
-      }
-      return Colors.grey[400]!;
-    }
+    final bool isActive = device['archived'] != true;
+    final now = DateTime.now();
+    final amcEndDate = device['amc_end_date'] != null
+        ? DateTime.tryParse(device['amc_end_date'])
+        : null;
+    final bool isAmcActive = amcEndDate != null && amcEndDate.isAfter(now);
 
-    // Function to get the background color based on status
-    Color _getStatusBackgroundColor(String status) {
-      if (status.toLowerCase().contains('active') || status.toLowerCase().contains('available')) {
-        return Colors.green[100]!;
-      }
-      return Colors.grey[200]!;
-    }
+    final String deviceStatusText = isActive ? 'Available' : 'Unavailable';
+    final Color deviceStatusColor = isActive ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
+    final String amcStatusText = isAmcActive ? 'Active' : 'Inactive';
+    final Color amcStatusColor = isAmcActive ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
 
-    // Function to get the text color for the buttons
-    Color _getButtonTextColor(bool isSelected) {
-      return isSelected ? Colors.white : AppColors.primaryText;
-    }
+    return GestureDetector(
+      onTap: () => _navigateToReports(context, device),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+        ),
+        child: Column(
+          children: [
+            // 1. TOP CARD SECTION
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left side content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: const TextSpan(
+                            children: [
+                              TextSpan(
+                                text: deviceName,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 160,
+                          height: 1,
+                          decoration: BoxDecoration(
+                            color: AppColors.secondaryAccent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Device ID
+                        Row(
+                          children: [
+                            const Text('Device ID : ', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+                            Text(deviceIdShort, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.normal, color: Colors.black)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Text with an underline
-                    Container(
+                        // Device Status
+                        Row(
+                          children: [
+                            const Text('Device Status : ', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(color: deviceStatusColor, borderRadius: BorderRadius.circular(4)),
+                              child: Text(deviceStatusText, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // AMC Status
+                        Row(
+                          children: [
+                            const Text('AMC Status : ', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(color: amcStatusColor, borderRadius: BorderRadius.circular(4)),
+                              child: Text(amcStatusText, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Right side - Device image
+                  Container(
+                    width: 120,
+                    height: 160,
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset('assets/device.png', fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) {
+                        return Container(decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)), child: Icon(Icons.devices, size: 60, color: Colors.grey[400]));
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. BOTTOM BUTTONS STRIP
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    // Both buttons navigate to ReportsPage
+                    onTap: () => _navigateToReports(context, device),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.grey,
-                            width: 1.0,
-                          ),
+                        color: Color(0xFF1976D2), // Blue color
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
                         ),
                       ),
-                      child: Text(
-                        '${device['device_name'] ?? 'Unknown Device'}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
+                      child: const Text(
+                        'Service',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Device ID row
-                    Row(
-                      children: [
-                        Text('Device ID:', style: AppTextStyles.bodySmall),
-                        const SizedBox(width: 4),
-                        Text(
-                          device['device_id'] ?? 'N/A',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Device Status row with dynamic color
-                    Row(
-                      children: [
-                        Text('Device Status:', style: AppTextStyles.bodySmall),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(deviceStatus),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            deviceStatus,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // AMC Status row with dynamic color
-                    Row(
-                      children: [
-                        Text('AMC Status:', style: AppTextStyles.bodySmall),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(amcStatus),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            amcStatus,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Image.asset(
-                'assets/device.png',
-                width: 80,
-                height: 120,
-                fit: BoxFit.contain,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Service',
-                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Stats',
-                      style: TextStyle(color: AppColors.primaryText),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  void _showDeviceDetails(BuildContext context, Map<String, dynamic> device) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Device Details',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: device['archived'] != true
-                              ? const Color(0xFFE8F5E8)
-                              : const Color(0xFFFFE8E8),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          device['archived'] != true ? 'Active' : 'Inactive',
-                          style: TextStyle(
-                            color: device['archived'] != true
-                                ? const Color(0xFF4CAF50)
-                                : const Color(0xFFF44336),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    // Both buttons navigate to ReportsPage
+                    onTap: () => _navigateToReports(context, device),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(20),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        device['device_name'] ?? 'Unknown Device',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
+                      child: const Text(
+                        'Stats',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 8),
-                      if (device['make'] != null || device['model'] != null)
-                        Text(
-                          '${device['make'] ?? ''} ${device['model'] ?? ''}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF424242),
-                          ),
-                        ),
-                      const SizedBox(height: 24),
-                      _buildDetailRow('Serial Number', device['serial_number']),
-                      _buildDetailRow('MAC Address', device['mac_address']),
-                      _buildDetailRow('Make', device['make']),
-                      _buildDetailRow('Model', device['model']),
-                      _buildDetailRow('Category', device['category']),
-                      _buildDetailRow('Location', device['location']),
-                      _buildDetailRow('Purchase Date', device['purchase_date'] != null
-                          ? _formatDate(DateTime.parse(device['purchase_date'])) : null),
-                      _buildDetailRow('Warranty Expiry', device['warranty_expiry_date'] != null
-                          ? _formatDate(DateTime.parse(device['warranty_expiry_date'])) : null),
-                      _buildDetailRow('AMC End Date', device['amc_end_date'] != null
-                          ? _formatDate(DateTime.parse(device['amc_end_date'])) : null),
-                      _buildDetailRow('Supplier', device['supplier']),
-                      _buildDetailRow('Cost', device['cost']?.toString()),
-                      const SizedBox(height: 20),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String? value) {
-    if (value == null || value.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
+  // --- Navigation Method ---
+  void _navigateToReports(BuildContext context, Map<String, dynamic> device) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportsPage(deviceId: device['id']),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }

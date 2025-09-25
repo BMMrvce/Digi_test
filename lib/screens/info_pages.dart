@@ -31,13 +31,19 @@ class AboutParamountScreen extends StatelessWidget {
       title: 'About Paramount',
       icon: Icons.info,
       child: Text(
-        'Paramount is a leading technology company focused on innovative imaging solutions.\n\n'
-        'Founded with the vision to revolutionize image processing and management, we continue to push the boundaries of what\'s possible in digital imaging.\n\n'
-        'Our Mission:\n'
-        '• Deliver cutting-edge imaging technology\n'
-        '• Provide exceptional user experiences\n'
-        '• Drive innovation in digital solutions\n\n'
-        'With years of expertise and a commitment to excellence, Paramount remains at the forefront of technological advancement.',
+        'Welcome to the QC Vation App by Paramount Instruments, a cutting-edge '
+            'solution developed to bring precision, innovation, and efficiency to textile materials testing.'
+            ' With over four decades of experience, Paramount Instruments has been a trusted leader in providing'
+            ' high-quality testing instruments and services to the textile industry. Our solutions are designed to meet '
+            'the evolving demands of textile manufacturers, quality control laboratories, and research institutions worldwide.'
+            '\n\nThe QC Vation App is a powerful digital tool that enhances your textile testing process. By offering '
+            'real-time data capture, analysis, and reporting features, we help you streamline your quality control operations '
+            'and ensure that your materials meet international testing standards. Whether you are testing for durability, '
+            'strength, colorfastness, or other textile parameters, our app provides comprehensive support, enabling you to make '
+            'data-driven decisions quickly and confidently.\n\nOur commitment to innovation drives us to continuously improve'
+            ' our testing solutions to meet the changing needs of the textile industry. '
+            'Paramount Instruments prides itself on providing reliable, accurate, and user-friendly tools that '
+            'enhance the efficiency and performance of your quality control processes.',
         style: AppTextStyles.bodyLarge.copyWith(
           height: 1.6,
         ),
