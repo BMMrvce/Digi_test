@@ -1,23 +1,94 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_components.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Homepage extends StatefulWidget {
   Homepage({super.key});
-
   @override
   State<Homepage> createState() => _HomepageState();
 }
+
+class ImageCarousel extends StatefulWidget {
+  const ImageCarousel({super.key});
+  @override
+  State<ImageCarousel> createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<ImageCarousel> {
+  int _current = 0;
+  final CarouselSliderController _carouselController = CarouselSliderController();
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> imgList = [
+      'assets/banner.png',
+      'assets/banner.png',
+      'assets/banner.png',
+    ];
+    return Column(
+      children: [
+        CarouselSlider(
+          carouselController: _carouselController,
+          options: CarouselOptions(
+            autoPlay: true,
+            enlargeCenterPage: false,
+            aspectRatio: 2.0,
+            autoPlayInterval: const Duration(seconds: 4),
+            viewportFraction: 1.0,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _current = index;
+              });
+            },
+          ),
+          items: imgList.map((item) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 5.0),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(10.0)),
+              child: Image.asset(item, fit: BoxFit.cover, width: MediaQuery.of(context).size.width),
+            ),
+          )).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: imgList.asMap().entries.map((entry) {
+            return GestureDetector(
+              onTap: () => _carouselController.animateToPage(entry.key),
+              child: Container(
+                width: 8.0,
+                height: 8.0,
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black)
+                      .withOpacity(_current == entry.key ? 0.9 : 0.4),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
 
 class _HomepageState extends State<Homepage> {
   final AuthService _authService = AuthService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
-  
+  int _current = 0;
+  final CarouselSliderController _carouselSliderController = CarouselSliderController();
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -36,8 +107,21 @@ class _HomepageState extends State<Homepage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 30),
+              Center(
+                child: SizedBox(
+                  height: 48,
+                  child: Image.asset(
+                    'assets/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
-              // Modern header with search and refresh
+              // --- Use the split carousel widget ---
+              ImageCarousel(),
+              const SizedBox(height: 20),
+              _buildSummarySection(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -74,29 +158,25 @@ class _HomepageState extends State<Homepage> {
                 ],
               ),
               const SizedBox(height: 20),
-              
-              // Search bar
               if (_isSearching) ...[
-              AppComponents.card(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search devices...',
-                    border: InputBorder.none,
-                    icon: Icon(Icons.search, color: AppColors.tertiaryText),
+                AppComponents.card(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search devices...',
+                      border: InputBorder.none,
+                      icon: Icon(Icons.search, color: AppColors.tertiaryText),
+                    ),
+                    style: AppTextStyles.bodyMedium,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
                   ),
-                  style: AppTextStyles.bodyMedium,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
                 ),
-              ),
                 const SizedBox(height: 20),
               ],
-              
-              // Device list
               Expanded(
                 child: _buildDevicesList(context, authProvider),
               ),
@@ -122,6 +202,78 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  Widget _buildSummarySection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: AppComponents.card(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
+              crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
+              children: [
+                Text(
+                  '6',
+                  style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
+                  textAlign: TextAlign.center, // Ensure text itself is centered
+                ),
+                Text(
+                  'Under Warranty',
+                  style: AppTextStyles.bodyMedium,
+                  textAlign: TextAlign.center, // Ensure text itself is centered
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: AppComponents.card(
+            child: SizedBox(
+              height: 65, // Adjust the height as needed to match the other cards
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
+                crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
+                children: [
+                  Text(
+                    '2',
+                    style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
+                    textAlign: TextAlign.center, // Ensure text itself is centered
+                  ),
+                  Text(
+                    'AMC Active',
+                    style: AppTextStyles.bodyMedium,
+                    textAlign: TextAlign.center, // Ensure text itself is centered
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: AppComponents.card(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
+              crossAxisAlignment: CrossAxisAlignment.center, // Horizontally center content
+              children: [
+                Text(
+                  '0',
+                  style: AppTextStyles.h1.copyWith(color: AppColors.primaryText),
+                  textAlign: TextAlign.center, // Ensure text itself is centered
+                ),
+                Text(
+                  'Service Request',
+                  style: AppTextStyles.bodyMedium,
+                  textAlign: TextAlign.center, // Ensure text itself is centered
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildDevicesList(BuildContext context, AuthProvider authProvider) {
     if (authProvider.organization == null) {
@@ -132,11 +284,11 @@ class _HomepageState extends State<Homepage> {
     }
 
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: authProvider.organization != null 
+      future: authProvider.organization != null
           ? _authService.getDevicesForOrganization(
-              authProvider.organization!['id'],
-              searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
-            )
+        authProvider.organization!['id'],
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+      )
           : Future.value([]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -172,105 +324,191 @@ class _HomepageState extends State<Homepage> {
   }
 
   Widget _buildDeviceCard(BuildContext context, Map<String, dynamic> device) {
-    final isActive = device['archived'] != true;
-    
-    return GestureDetector(
-      onTap: () => _showDeviceDetails(context, device),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isActive ? const Color(0xFFE8F5E8) : const Color(0xFFFFE8E8),
-                    borderRadius: BorderRadius.circular(16),
+    // Use a null-aware operator for safety
+    final deviceStatus = device['device_status'] ?? 'Not available';
+    final amcStatus = device['amc_status'] ?? 'Not active';
+
+    // Function to get the color based on status text
+    Color _getStatusColor(String status) {
+      if (status.toLowerCase().contains('active') || status.toLowerCase().contains('available')) {
+        return Colors.green[600]!;
+      }
+      return Colors.grey[400]!;
+    }
+
+    // Function to get the background color based on status
+    Color _getStatusBackgroundColor(String status) {
+      if (status.toLowerCase().contains('active') || status.toLowerCase().contains('available')) {
+        return Colors.green[100]!;
+      }
+      return Colors.grey[200]!;
+    }
+
+    // Function to get the text color for the buttons
+    Color _getButtonTextColor(bool isSelected) {
+      return isSelected ? Colors.white : AppColors.primaryText;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Text with an underline
+                    Container(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey,
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        '${device['device_name'] ?? 'Unknown Device'}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Device ID row
+                    Row(
+                      children: [
+                        Text('Device ID:', style: AppTextStyles.bodySmall),
+                        const SizedBox(width: 4),
+                        Text(
+                          device['device_id'] ?? 'N/A',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Device Status row with dynamic color
+                    Row(
+                      children: [
+                        Text('Device Status:', style: AppTextStyles.bodySmall),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(deviceStatus),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            deviceStatus,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // AMC Status row with dynamic color
+                    Row(
+                      children: [
+                        Text('AMC Status:', style: AppTextStyles.bodySmall),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(amcStatus),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            amcStatus,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Image.asset(
+                'assets/device.png',
+                width: 80,
+                height: 120,
+                fit: BoxFit.contain,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: Text(
-                    isActive ? 'Active' : 'Inactive',
-                    style: TextStyle(
-                      color: isActive ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Service',
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
-                const Spacer(),
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 16,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${device['serial_number']?.length ?? 0} details',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Stats',
+                      style: TextStyle(color: AppColors.primaryText),
+                    ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              device['device_name'] ?? 'Unknown Device',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-                height: 1.2,
               ),
-            ),
-            const SizedBox(height: 4),
-            if (device['make'] != null || device['model'] != null)
-              Text(
-                '${device['make'] ?? ''} ${device['model'] ?? ''}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF424242),
-                  height: 1.3,
-                ),
-              ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 16,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  device['warranty_expiry_date'] != null 
-                      ? _formatDate(DateTime.parse(device['warranty_expiry_date']))
-                      : 'No expiry date',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
 
   void _showDeviceDetails(BuildContext context, Map<String, dynamic> device) {
     showModalBottomSheet(
@@ -288,7 +526,6 @@ class _HomepageState extends State<Homepage> {
           ),
           child: Column(
             children: [
-              // Handle bar
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
@@ -298,7 +535,6 @@ class _HomepageState extends State<Homepage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Header with close button
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
                 child: Row(
@@ -319,7 +555,6 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
               ),
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
@@ -328,20 +563,19 @@ class _HomepageState extends State<Homepage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      // Status badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: device['archived'] != true 
-                              ? const Color(0xFFE8F5E8) 
+                          color: device['archived'] != true
+                              ? const Color(0xFFE8F5E8)
                               : const Color(0xFFFFE8E8),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           device['archived'] != true ? 'Active' : 'Inactive',
                           style: TextStyle(
-                            color: device['archived'] != true 
-                                ? const Color(0xFF4CAF50) 
+                            color: device['archived'] != true
+                                ? const Color(0xFF4CAF50)
                                 : const Color(0xFFF44336),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -349,7 +583,6 @@ class _HomepageState extends State<Homepage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Device name
                       Text(
                         device['device_name'] ?? 'Unknown Device',
                         style: const TextStyle(
@@ -368,18 +601,17 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
                       const SizedBox(height: 24),
-                      // Device details grid
                       _buildDetailRow('Serial Number', device['serial_number']),
                       _buildDetailRow('MAC Address', device['mac_address']),
                       _buildDetailRow('Make', device['make']),
                       _buildDetailRow('Model', device['model']),
                       _buildDetailRow('Category', device['category']),
                       _buildDetailRow('Location', device['location']),
-                      _buildDetailRow('Purchase Date', device['purchase_date'] != null 
+                      _buildDetailRow('Purchase Date', device['purchase_date'] != null
                           ? _formatDate(DateTime.parse(device['purchase_date'])) : null),
-                      _buildDetailRow('Warranty Expiry', device['warranty_expiry_date'] != null 
+                      _buildDetailRow('Warranty Expiry', device['warranty_expiry_date'] != null
                           ? _formatDate(DateTime.parse(device['warranty_expiry_date'])) : null),
-                      _buildDetailRow('AMC End Date', device['amc_end_date'] != null 
+                      _buildDetailRow('AMC End Date', device['amc_end_date'] != null
                           ? _formatDate(DateTime.parse(device['amc_end_date'])) : null),
                       _buildDetailRow('Supplier', device['supplier']),
                       _buildDetailRow('Cost', device['cost']?.toString()),
@@ -397,7 +629,7 @@ class _HomepageState extends State<Homepage> {
 
   Widget _buildDetailRow(String label, String? value) {
     if (value == null || value.isEmpty) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(

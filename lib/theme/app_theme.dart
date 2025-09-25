@@ -252,6 +252,8 @@ class AppColors {
   // Additional Colors
   static const Color dividerColor = Color(0xFFE0E0E0);
   static const Color shadowColor = Color(0x0A000000);
+  static const Color primaryColor = Color(0xFF0056D2);
+  static const Color secondaryColor = Color(0xFFE0E0E0);
 }
 
 /// App Text Styles

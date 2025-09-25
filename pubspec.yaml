@@ -38,6 +38,9 @@ dependencies:
   provider: ^6.1.2
   modal_bottom_sheet: ^3.0.0
   flutter_date_range_picker: ^0.2.1
+  flutter_svg: ^2.0.7
+  shared_preferences: ^2.2.2
+  carousel_slider: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -71,8 +74,10 @@ flutter:
      - assets/qclogo.png
      - assets/rise.png
      - assets/qualcont.png
-
-
+     - assets/logo.svg
+     - assets/logo.png
+     - assets/banner.png
+     - assets/device.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
