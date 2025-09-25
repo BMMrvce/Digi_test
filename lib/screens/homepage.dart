@@ -475,7 +475,7 @@ class _HomepageState extends State<Homepage> {
                     ),
                   ),
                   child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       'Service',
                       style: TextStyle(color: Colors.white),
@@ -494,7 +494,7 @@ class _HomepageState extends State<Homepage> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       'Stats',
                       style: TextStyle(color: AppColors.primaryText),
