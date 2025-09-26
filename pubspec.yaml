@@ -78,7 +78,11 @@ flutter:
      - assets/logo.png
      - assets/banner.png
      - assets/device.png
-  # An image asset can refer to one or more resolution-specific "variants", see
+     - assets/care.png
+     - assets/images.png
+     - assets/logo-square.png
+     - assets/Paramount_logo.svg
+    # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
   
