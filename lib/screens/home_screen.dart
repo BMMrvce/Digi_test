@@ -45,13 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-<<<<<<< HEAD
-            icon: ImageIcon(AssetImage('lib/assets/care.png')),
-            activeIcon: ImageIcon(AssetImage('lib/assets/care.png')),
-=======
+
             icon: ImageIcon(AssetImage('assets/care.png')),
             activeIcon: ImageIcon(AssetImage('assets/care.png')),
->>>>>>> uday
             label: 'Care',
           ),
           BottomNavigationBarItem(
